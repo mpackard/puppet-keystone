@@ -150,6 +150,10 @@
 #   (optional) If set, use this value for max_overflow with sqlalchemy.
 #   Defaults to: undef
 #
+# [*domain_specific*]
+#   (optional) Domain-specific config. Defaults to false. 
+#   (boolean value)
+#
 # [*enable_pki_setup*]
 #   (optional) Enable call to pki_setup to generate the cert for signing pki tokens and
 #   revocation lists if it doesn't already exist. This generates a cert and key stored in file
@@ -517,6 +521,7 @@ class keystone(
   $database_min_pool_size             = undef,
   $database_max_pool_size             = undef,
   $database_max_overflow              = undef,
+  $domain_specific                    = false,
   $enable_pki_setup                   = true,
   $signing_certfile                   = '/etc/keystone/ssl/certs/signing_cert.pem',
   $signing_keyfile                    = '/etc/keystone/ssl/private/signing_key.pem',
@@ -954,4 +959,19 @@ class keystone(
   anchor { 'keystone_started':
     require => Service[$service_name]
   }
+
+  if $domain_specific {
+    file { '/etc/keystone/domains' :
+      ensure  => directory,
+      mode    => '0750',
+      owner   => 'keystone',
+      group   => 'keystone',
+      require => File['/etc/keystone'],
+    }
+    keystone_config {
+      'identity/domain_specific_drivers_enabled': value => 'True';
+      'identity/domain_config_dir': value => '/etc/keystone/domains';
+    }
+  }
+   
 }
